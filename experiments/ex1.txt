@@ -1,0 +1,8 @@
+Nume_experiment 23 20
+enron 1000 5 
+50 poisson 5
+SAPAttack 0.5
+default
+
+
+
