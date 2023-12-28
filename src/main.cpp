@@ -8,12 +8,7 @@
 const std::string EXPERIMENTS_PATH = "E:\\Facultate\\anul4\\IC\\proiect c++\\experiments\\";
 const std::string DATASET_PATH = "E:\\Facultate\\anul4\\IC\\proiect c++\\datasets";
 
-std::vector<Experiment> loadExperiments(){
-    for (const auto & entry : std::filesystem::directory_iterator(EXPERIMENTS_PATH))
-    {
-        std::cout << entry.path() << std::endl;
-    }
-}
+
 int main()
 {
     // Code goes here

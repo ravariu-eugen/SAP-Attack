@@ -3,6 +3,7 @@
 #include <chrono>
 #include <iostream>
 #include <fstream>
+#include <random>
 Experiment::Experiment(
     std::string name, size_t seed, size_t num_runs,
     Dataset* dataset, size_t num_keywords, size_t observation_offset,
@@ -27,29 +28,7 @@ Experiment::Experiment(
     this->observation_offset = observation_offset;
 }
 
-Experiment Experiment::read_experiment(const std::string& path){
 
-    std::ifstream in(path);
-    std::string name, query_dist, attack_name, defense_name, dataset_name;
-    size_t seed, num_runs, num_keywords, observation_offset, obs_weeks, num_queries_per_week;
-    std::map<std::string, std::string> attack_params, defense_params;
-    in >> name >> seed >> num_runs;
-    in >> dataset_name >> num_keywords >> observation_offset;
-    Dataset* dataset = new Dataset(dataset_name, path);
-    in >> obs_weeks >> query_dist >> num_queries_per_week;
-    in >> attack_name;
-    if(attack_name == "SAPAttack"){
-        std::string alpha;
-        in >> alpha;
-        attack_params["alpha"] = alpha;
-    }
-    in >> defense_name;
-    return Experiment::Experiment(name, seed, num_runs, 
-    dataset, num_keywords, observation_offset, 
-    obs_weeks, query_dist, num_queries_per_week, 
-    attack_name, attack_params, 
-    defense_name, defense_params);
-}
 
 Experiment::~Experiment()
 {
