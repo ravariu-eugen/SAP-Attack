@@ -3,8 +3,7 @@
 #include "manager.hpp"
 #include "experiment.hpp"
 #include "dataset.hpp"
-#include <filesystem>
-#include <fstream>
+#include "manager.hpp"
 const std::string EXPERIMENTS_PATH = "E:\\Facultate\\anul4\\IC\\proiect c++\\experiments\\";
 const std::string DATASET_PATH = "E:\\Facultate\\anul4\\IC\\proiect c++\\datasets";
 
@@ -12,15 +11,18 @@ const std::string DATASET_PATH = "E:\\Facultate\\anul4\\IC\\proiect c++\\dataset
 int main()
 {
     // Code goes here
-    
-    
+    Manager manager(DATASET_PATH, EXPERIMENTS_PATH);
 
-    Dataset dataset = Dataset("enron", DATASET_PATH);
+    std::vector<Experiment> experiments = manager.loadExperiments();
 
-    std::cout << "Finished loading dataset " << dataset.getName() << std::endl;
-    std::map<std::string, Dataset> datasets;
-    // load experiment
-    return 0;
+    for (Experiment experiment : experiments)
+    {
+        std::cout << "Running experiment: " << experiment.getName() << std::endl;
+        std::cout << experiment.to_string() << std::endl;
+        auto results = experiment.run_experiment();
+        std::cout << results.accuracy << " " << results.time << std::endl;
+    }
+
 }
 
 

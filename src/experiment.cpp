@@ -4,6 +4,9 @@
 #include <iostream>
 #include <fstream>
 #include <random>
+#include <sstream>
+#include <numeric>
+
 Experiment::Experiment(
     std::string name, size_t seed, size_t num_runs,
     Dataset* dataset, size_t num_keywords, size_t observation_offset,
@@ -11,7 +14,9 @@ Experiment::Experiment(
     std::string attack, std::map<std::string, std::string> attack_params, 
     std::string defense, std::map<std::string, std::string> defense_params)
 {
+    this->name = name;
     this->seed = seed;
+    this->num_runs = num_runs;
     this->num_keywords = num_keywords;
     this->dataset = dataset;
 
@@ -33,12 +38,48 @@ Experiment::Experiment(
 Experiment::~Experiment()
 {
 }
-std::vector<std::vector<size_t>> Experiment::generate_queries(size_t seed){
+std::string Experiment::to_string()
+{
+    std::stringstream ss;
+    ss << "Experiment: " << name << "\n";
+    ss << "Seed: " << seed << "\n";
+    ss << "Num runs: " << num_runs << "\n";
+    ss << "Dataset: " << dataset->name << "\n";
+    ss << "Num keywords: " << num_keywords << "\n";
+    ss << "Observation offset: " << observation_offset << "\n";
+    ss << "Observation weeks: " << obs_weeks << "\n";
+    ss << "Query distribution: " << query_dist << "\n";
+    ss << "Num queries per week: " << num_queries_per_week << "\n";
+    ss << attack->to_string();
+    ss << defense->to_string();
+
+    std::string s = ss.str();
+    return s;
+}
+std::string Experiment::getName()
+{
+    return name;
+}
+std::vector<keyword_id> Experiment::create_keyword_list(size_t seed, bool random)
+{
+
+    size_t total_keywords = dataset->keyword_data.size();
+    std::vector<keyword_id> all_keywords(total_keywords);
+    std::iota(all_keywords.begin(), all_keywords.end(), 0);
+    if (random){
+        std::mt19937 gen(static_cast<unsigned int>(seed));
+        std::shuffle(all_keywords.begin(), all_keywords.end(), gen);
+    }
+    std::vector<keyword_id> keywords(all_keywords.begin(), all_keywords.begin() + num_keywords);
+    return keywords;
+}
+std::vector<std::vector<size_t>> Experiment::generate_queries(size_t seed, std::vector<keyword_id> &keyword_list)
+{
     // generate for each week a set of keywords to query
     std::vector<std::vector<size_t>> queries;
-    std::mt19937 gen(seed);
+    std::mt19937 gen(static_cast<unsigned int>(seed));
     size_t start_week = dataset->trend_weeks - obs_weeks;
-    for (size_t week  = start_week; week < start_week + obs_weeks; week++){
+    for (size_t week  = 0; week < obs_weeks; week++){
         // for each week
         size_t num_queries;
 
@@ -49,7 +90,7 @@ std::vector<std::vector<size_t>> Experiment::generate_queries(size_t seed){
         } else if (query_dist == "poisson")
         {
             // poisson
-            std::poisson_distribution<> dist(num_queries_per_week);
+            std::poisson_distribution<> dist(static_cast<unsigned int>(num_queries_per_week));
             num_queries = dist(gen);
         }
 
@@ -57,20 +98,19 @@ std::vector<std::vector<size_t>> Experiment::generate_queries(size_t seed){
         
         for (int query = 0; query < num_queries; query++){
             std::vector<double> weights;
-            for (int keyword = 0; keyword < num_keywords; keyword++){
+            for (keyword_id keyword : keyword_list){
                 weights.push_back(
-                    dataset->getTrendValue(keyword, + week)
+                    dataset->getTrendValue(keyword, start_week + week)
                 );
             }
             std::discrete_distribution<> d_dist(weights.begin(), weights.end());
-            size_t keyword_id = d_dist(gen);
-            week_queries.push_back(query);
+            keyword_id keyword_id = keyword_list[d_dist(gen)];
+            week_queries.push_back(keyword_id);
         }
         queries.push_back(week_queries);
     }
     return queries;
 }
-
 
 float evaluate_prediction(std::vector<std::vector<keyword_id>> &predicted_queries, 
                           std::vector<std::vector<keyword_id>> &true_queries){
@@ -91,13 +131,21 @@ float evaluate_prediction(std::vector<std::vector<keyword_id>> &predicted_querie
 
 experimentResults Experiment::run_round(size_t seed)
 {
+
+
     // generate queries
-    std::vector<std::vector<size_t>> queries = generate_queries(seed);
+    std::vector keyword_list = create_keyword_list(seed, true);
+    std::vector<std::vector<size_t>> queries = generate_queries(seed, keyword_list);
+
+    // print queries
+    //log_to_stdout(print_trace(queries, "queries"));
+
     // defense - turn queries into access patterns
-    std::vector<std::vector<access_pattern>> obeserved_patterns = defense->run_defense(queries);
+    std::vector<std::vector<access_pattern>> observed_patterns = defense->run_defense(queries);
+
     // attack - match keywords to acces patterns
     auto start_time = std::chrono::high_resolution_clock::now(); 
-    std::vector<std::vector<size_t>> predicted_queries = attack->run_attack(obeserved_patterns);
+    std::vector<std::vector<size_t>> predicted_queries = attack->run_attack(observed_patterns, keyword_list);
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
     float durationInSeconds = static_cast<float>(duration) / 1000000;
@@ -109,9 +157,18 @@ experimentResults Experiment::run_round(size_t seed)
 }
 
 experimentResults Experiment::run_experiment(){
+
+    float avg_accuracy = 0;
+    float avg_time = 0;
     for (size_t i = 0; i < num_runs; i++){
+        
+        //std::cout << "Run " << i << std::endl;
         experimentResults result = run_round(seed + i);
-        std::cout << result.accuracy << " " << result.time << std::endl;
+        //std::cout << result.accuracy << " " << result.time << std::endl;
+        avg_accuracy += result.accuracy;
+        avg_time += result.time;
     }
-    return experimentResults{0, 0};
+    avg_accuracy /= num_runs;
+    avg_time /= num_runs;
+    return experimentResults{avg_accuracy, avg_time};
 }

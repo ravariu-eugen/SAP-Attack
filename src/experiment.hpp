@@ -5,7 +5,7 @@
 #include "dataset.hpp"
 #include "attack.hpp"
 #include "defense.hpp"
-#include <random>
+
 #include "helpers.hpp"
 struct experimentResults{
     float accuracy;
@@ -30,7 +30,10 @@ private:
     Attack* attack;
     Defense* defense;
     
-    std::vector<std::vector<size_t>> generate_queries(size_t seed);
+
+
+    std::vector<keyword_id> create_keyword_list(size_t seed, bool random);
+    std::vector<std::vector<size_t>> generate_queries(size_t seed, std::vector<keyword_id>& keyword_list);
     experimentResults run_round(size_t seed);
 public:
     experimentResults run_experiment();
@@ -42,6 +45,8 @@ public:
     std::string attack, std::map<std::string, std::string> attack_params, 
     std::string defense, std::map<std::string, std::string> defense_params);
     ~Experiment();
+    std::string to_string();
+    std::string getName();
 };
 
 

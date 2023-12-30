@@ -26,3 +26,14 @@ std::vector<std::vector<access_pattern>> Defense::run_defense(std::vector<std::v
 
     return results;
 }
+
+std::string Defense::getName()
+{
+    return name;
+}
+
+std::string Defense::to_string()
+{
+    std::string s = "Defense: " + name + "\n";
+    return s;
+}
