@@ -6,7 +6,7 @@ project(SAPAttack)
 find_package(OpenMP REQUIRED)
 
 # Add source files to be compiled
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -Wall")
 add_subdirectory(hungarian)
 
 

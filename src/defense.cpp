@@ -2,6 +2,7 @@
 
 Defense::Defense(Dataset *dataset)
 {
+    this->name = "default";
     this->dataset = dataset;
 }
 

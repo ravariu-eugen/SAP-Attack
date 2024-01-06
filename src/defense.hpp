@@ -7,7 +7,7 @@ class Defense
 {
 protected:
     /* data */
-    std::string name = "default";
+    std::string name;
     Dataset *dataset;
 public:
     Defense(Dataset *dataset);

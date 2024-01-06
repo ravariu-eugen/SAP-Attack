@@ -6,6 +6,8 @@
 #include <random>
 #include <sstream>
 #include <numeric>
+#include "clrzdefense.hpp"
+
 
 Experiment::Experiment(
     std::string name, size_t seed, size_t num_runs,
@@ -22,10 +24,16 @@ Experiment::Experiment(
 
     if (attack == "SAPAttack"){
         double alpha = std::stod(attack_params["alpha"]);
-        this->attack = new SAPAttack(dataset, observation_offset, alpha, defense);
+        std::string known_defense = attack_params["defense"];
+        this->attack = new SAPAttack(dataset, observation_offset, alpha, known_defense, defense_params);
     }
     if (defense == "default"){
         this->defense = new Defense(dataset);
+    }
+    else if (defense == "CLRZ"){
+        double TPR = std::stod(defense_params["TPR"]);
+        double FPR = std::stod(defense_params["FPR"]);;
+        this->defense = new CLRZDefence(dataset, TPR, FPR, seed);
     }
     this->query_dist = query_dist;
     this->obs_weeks = obs_weeks;
@@ -94,18 +102,14 @@ std::vector<std::vector<size_t>> Experiment::generate_queries(size_t seed, std::
             num_queries = dist(gen);
         }
 
-        std::vector<size_t> week_queries;
+        std::vector<size_t> week_queries(num_queries);
         
         for (int query = 0; query < num_queries; query++){
-            std::vector<double> weights;
-            for (keyword_id keyword : keyword_list){
-                weights.push_back(
-                    dataset->getTrendValue(keyword, start_week + week)
-                );
-            }
+            std::vector<double> weights(keyword_list.size());
+            for (size_t i = 0; i < keyword_list.size(); i++)
+                weights[i] = dataset->getTrendValue(keyword_list[i], start_week + week);
             std::discrete_distribution<> d_dist(weights.begin(), weights.end());
-            keyword_id keyword_id = keyword_list[d_dist(gen)];
-            week_queries.push_back(keyword_id);
+            week_queries[query] = keyword_list[d_dist(gen)];
         }
         queries.push_back(week_queries);
     }
@@ -156,15 +160,26 @@ experimentResults Experiment::run_round(size_t seed)
     return experimentResults{accuracy, durationInSeconds};
 }
 
-experimentResults Experiment::run_experiment(){
+std::vector<experimentResults> Experiment::run_experiment(){
 
+
+std::cout << "Running experiment: " << name << std::endl;
     float avg_accuracy = 0;
     float avg_time = 0;
-    for (size_t i = 0; i < num_runs; i++){
-        
-        //std::cout << "Run " << i << std::endl;
-        experimentResults result = run_round(seed + i);
-        //std::cout << result.accuracy << " " << result.time << std::endl;
+    std::vector<experimentResults> results(num_runs);
+    #pragma omp parallel for schedule(dynamic)
+    for (int i = 0; i < num_runs; i++){
+        results[i] = run_round(seed + i);
+    }
+    return results;
+}
+
+experimentResults Experiment::average(std::vector<experimentResults> results)
+{
+    float avg_accuracy = 0;
+    float avg_time = 0;
+    size_t num_runs = results.size();
+    for (experimentResults result : results){
         avg_accuracy += result.accuracy;
         avg_time += result.time;
     }
