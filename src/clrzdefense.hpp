@@ -11,7 +11,7 @@ private:
 public:
 
     CLRZDefence(Dataset *dataset, double TPR, double FPR, size_t seed);
-    std::vector<std::vector<access_pattern>> run_defense(std::vector<std::vector<keyword_id>>& queries);
+    std::vector<std::vector<access_pattern>> run_defense (std::vector<std::vector<keyword_id>>& queries);
     ~CLRZDefence();
 };
 

@@ -20,7 +20,7 @@ std::vector<std::vector<access_pattern>> Defense::run_defense(std::vector<std::v
         std::vector<access_pattern> week_results;
         for (size_t query: week_queries)
         {
-            week_results.push_back(dataset->getKeywordDocuments(query));
+            week_results.push_back(dataset->train_keyword_docs[query]);
         }
         results.push_back(week_results);
     }

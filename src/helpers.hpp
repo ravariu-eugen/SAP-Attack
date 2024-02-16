@@ -34,3 +34,7 @@ void measureExecutionTime(Func&& func)
 
     std::cout << "Execution time: " << duration/1000.0 << " seconds" << std::endl;
 }
+
+#include <cstdlib>
+
+bool bernoulli(size_t seed, double p);

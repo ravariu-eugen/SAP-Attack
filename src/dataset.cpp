@@ -2,9 +2,11 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <numeric>
+#include <random>
 
 
-Dataset::Dataset(const std::string &name, const std::string &path)
+Dataset::Dataset(const std::string &name, const std::string &path, size_t seed)
 {
     this->name = name;
     const std::string dataset_folder = 
@@ -18,6 +20,9 @@ Dataset::Dataset(const std::string &name, const std::string &path)
     std::getline(keywords_file, line);
     std::stringstream ss(line);
     ss >> trend_weeks;
+
+
+
     while (std::getline(keywords_file, line)){
 
         std::stringstream ss(line);
@@ -37,7 +42,8 @@ Dataset::Dataset(const std::string &name, const std::string &path)
         keyword_index[keyword] = keywords.size() - 1;
         keyword_data.push_back({count, trend_data});
     }
-    keyword_docs.resize(keywords.size());
+    train_keyword_docs.resize(keywords.size());
+    test_keyword_docs.resize(keywords.size());
     // read documents
 
     std::ifstream documents_file(
@@ -53,12 +59,31 @@ Dataset::Dataset(const std::string &name, const std::string &path)
         for (size_t i = 0; i < keyword_count; i++){
             ss >> keyword;
             doc_keywords[i] = getKeywordID(keyword);
-            keyword_docs[getKeywordID(keyword)]
-                    .push_back(document_keywords.size());
         }
 
         document_keywords.push_back(doc_keywords);
     }
+
+
+    std::vector<int> doc_index(document_keywords.size());
+    is_train_doc.resize(document_keywords.size());
+    std::iota(doc_index.begin(), doc_index.end(), 0);
+    std::mt19937 gen(static_cast<unsigned int>(seed));
+    std::shuffle(doc_index.begin(), doc_index.end(), gen);
+
+    for (size_t i = 0; i < doc_index.size(); i++){
+
+        bool is_train = i < 0.5 * doc_index.size();
+        is_train_doc[doc_index[i]] = is_train;
+        
+        for (keyword_id keyword : document_keywords[doc_index[i]])
+            if (is_train)
+                train_keyword_docs[keyword].push_back(doc_index[i]);
+            else
+                test_keyword_docs[keyword].push_back(doc_index[i]);
+        
+    }
+
 
 }
 
@@ -70,9 +95,6 @@ double Dataset::getTrendValue(keyword_id keyword_id, size_t week){
     return keyword_data[keyword_id].trend_data[week];
 }
 
-std::vector<size_t>& Dataset::getKeywordDocuments(keyword_id keyword_id){
-    return keyword_docs[keyword_id];
-}
 
 Dataset::~Dataset()
 {

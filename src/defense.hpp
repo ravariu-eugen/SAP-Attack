@@ -12,7 +12,7 @@ protected:
 public:
     Defense(Dataset *dataset);
     ~Defense();
-    std::vector<std::vector<access_pattern>> run_defense(std::vector<std::vector<keyword_id>>& queries);
+    virtual std::vector<std::vector<access_pattern>> run_defense(std::vector<std::vector<keyword_id>>& queries);
     std::string getName();
     std::string to_string();
 };

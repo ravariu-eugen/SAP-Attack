@@ -8,14 +8,14 @@ private:
     std::string dataset_path;
     std::string experiments_path;
     std::map <std::string, Dataset*> datasets;
-    const size_t num_runs = 5;
+    const size_t num_runs = 12;
     const size_t obs_weeks = 50;
     const std::string query_dist = "poisson";
 public:
     Manager(std::string dataset_path, std::string experiments_path);
     ~Manager();
 
-    Dataset* loadDataset(const std::string& name);
+    Dataset* loadDataset(const std::string& name, size_t seed);
 
     void run_alpha_experiment(size_t seed, std::string results_path, std::string dataset_name, 
                             size_t num_keywords, double alpha_step = 0.1);

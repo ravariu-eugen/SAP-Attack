@@ -145,6 +145,7 @@ experimentResults Experiment::run_round(size_t seed)
     //log_to_stdout(print_trace(queries, "queries"));
 
     // defense - turn queries into access patterns
+    //std::cout << "Running Defense " << defense->getName() << std::endl;
     std::vector<std::vector<access_pattern>> observed_patterns = defense->run_defense(queries);
 
     // attack - match keywords to acces patterns

@@ -96,3 +96,7 @@ matrix transpose(matrix m) {
     return t;
 }
 
+bool bernoulli(size_t seed, double p){
+    std::srand(seed);
+    return std::rand() % 10000 < p * 10000;
+}

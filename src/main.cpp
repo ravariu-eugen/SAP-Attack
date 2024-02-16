@@ -13,15 +13,15 @@ int main()
     // Code goes here
     Manager manager(DATASET_PATH, EXPERIMENTS_PATH);
 
-    const bool RUN_ALPHA = false;
-    const bool RUN_OFFSET = false;
-    const bool RUN_QUANTITY = false;
+    const bool RUN_ALPHA = true;
+    const bool RUN_OFFSET = true;
+    const bool RUN_QUANTITY = true;
     const bool RUN_DEFENSE = true;
     std::vector<std::function<void()>> alpha_experiments = {
-        [&manager]() {manager.run_alpha_experiment(0, RESULTS_PATH, "enron", 100);},
-        [&manager]() {manager.run_alpha_experiment(1, RESULTS_PATH, "enron", 500);},
-        [&manager]() {manager.run_alpha_experiment(2, RESULTS_PATH, "enron", 1000);},
-        [&manager]() {manager.run_alpha_experiment(3, RESULTS_PATH, "enron", 3000);}
+        [&manager]() {manager.run_alpha_experiment(0, RESULTS_PATH, "enron", 100, 0.05);},
+        [&manager]() {manager.run_alpha_experiment(1, RESULTS_PATH, "enron", 500, 0.05);},
+        [&manager]() {manager.run_alpha_experiment(2, RESULTS_PATH, "enron", 1000, 0.05);},
+        [&manager]() {manager.run_alpha_experiment(3, RESULTS_PATH, "enron", 3000, 0.05);}
     };
 
     std::vector<int> offsets{0, 5, 10, 20, 50, 100, 200};
@@ -43,10 +43,14 @@ int main()
         [&manager, &num_queries]() {manager.run_quantity_experiment(4, RESULTS_PATH, "enron", 1500, num_queries);}
     };
 
-    std::vector<double> FPRs = {0.1, 0.2, 0.3};
+    std::vector<double> FPRs = {0.0, 0.01, 0.05, 0.1};
     std::vector<std::function<void()>> defense_experiments = {
         [&manager, &FPRs]() {manager.run_defense_experiment(0, RESULTS_PATH, "enron", 100, FPRs, "default");},
-        [&manager, &FPRs]() {manager.run_defense_experiment(1, RESULTS_PATH, "enron", 100, FPRs, "clrz");},
+        [&manager, &FPRs]() {manager.run_defense_experiment(0, RESULTS_PATH, "enron", 500, FPRs, "default");},
+        //[&manager, &FPRs]() {manager.run_defense_experiment(0, RESULTS_PATH, "enron", 1000, FPRs, "default");},
+        [&manager, &FPRs]() {manager.run_defense_experiment(0, RESULTS_PATH, "enron", 100, FPRs, "CLRZ");},
+        [&manager, &FPRs]() {manager.run_defense_experiment(0, RESULTS_PATH, "enron", 500, FPRs, "CLRZ");},
+        //[&manager, &FPRs]() {manager.run_defense_experiment(0, RESULTS_PATH, "enron", 1000, FPRs, "CLRZ");},
     };
     std::vector<std::function<void()>> experiments;
     if(RUN_ALPHA)

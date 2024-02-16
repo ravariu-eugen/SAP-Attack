@@ -1,4 +1,6 @@
 #include "clrzdefense.hpp"
+#include <iostream>
+
 
 CLRZDefence::CLRZDefence(Dataset *dataset, double TPR, double FPR, size_t seed): Defense(dataset)
 {
@@ -14,26 +16,33 @@ CLRZDefence::~CLRZDefence()
 
 std::vector<std::vector<access_pattern>> CLRZDefence::run_defense(std::vector<std::vector<size_t>>& queries)
 {
+
     std::vector<std::vector<access_pattern>> results;
-    auto modified_access = std::vector<std::vector<bool>>(dataset->keywords.size(), 
-            std::vector<bool>(dataset->document_keywords.size(), false));
+    
     std::mt19937 gen(static_cast<unsigned int>(seed));
-    std::bernoulli_distribution distTrue(1 - TPR);
+    std::bernoulli_distribution distTrue(TPR);
     std::bernoulli_distribution distFalse(FPR);
-    std::vector<access_pattern> new_access_paterns(dataset->keyword_docs.size());
+    std::vector<access_pattern> new_access_paterns(dataset->train_keyword_docs.size());
     for (keyword_id keyword_id = 0; keyword_id < dataset->keywords.size(); keyword_id++)
     {
-        for (size_t doc: dataset->document_keywords[keyword_id])
+        auto modified_access = new bool[dataset->document_keywords.size()];
+        std::fill(modified_access, modified_access + dataset->document_keywords.size(), false);
+        for (size_t doc: dataset->train_keyword_docs[keyword_id])
         {
-            modified_access[keyword_id][doc] = true;
+            modified_access[doc] = true;
         }
 
         for (size_t doc = 0; doc < dataset->document_keywords.size(); doc++)
         {
-            modified_access[keyword_id][doc] = modified_access[keyword_id][doc] ? distTrue(gen) : distFalse(gen);
-            if (modified_access[keyword_id][doc])
+            if (modified_access[doc])
             {
-                new_access_paterns[keyword_id].push_back(doc);
+                if(distTrue(gen))
+                    new_access_paterns[keyword_id].push_back(doc);  
+            }
+            else
+            {
+                if(distFalse(gen))
+                    new_access_paterns[keyword_id].push_back(doc);
             }
         }
     }

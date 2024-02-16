@@ -3,9 +3,9 @@
 #include <filesystem>
 #include <iostream>
 
-Dataset* Manager::loadDataset(const std::string& name){
+Dataset* Manager::loadDataset(const std::string& name, size_t seed){
     if (datasets.find(name) == datasets.end()){
-        datasets[name] = new Dataset(name, dataset_path);
+        datasets[name] = new Dataset(name, dataset_path, seed);
     }
 
     return datasets[name];
@@ -48,7 +48,7 @@ Experiment Manager::read_experiment(const std::string& path){
     attack_params["defense"] = "default";
     in >> name >> seed >> num_runs;
     in >> dataset_name >> num_keywords;
-    Dataset* dataset = loadDataset(dataset_name);
+    Dataset* dataset = loadDataset(dataset_name, seed);
     in >> obs_weeks >> observation_offset;
     in >> query_dist >> num_queries_per_week;
     in >> attack_name;
@@ -82,7 +82,7 @@ void Manager::run_alpha_experiment(size_t seed, std::string results_path, std::s
     
     // experiment parameters
     
-    Dataset* dataset = loadDataset(dataset_name);
+    Dataset* dataset = loadDataset(dataset_name, seed);
     size_t observation_offset = 5;
     size_t num_queries_per_week = 5;
 
@@ -97,7 +97,7 @@ void Manager::run_alpha_experiment(size_t seed, std::string results_path, std::s
     out << num_keywords << " " << num_runs << std::endl;
 
 
-    for(double alpha = 0.0; alpha < 1.0; alpha += alpha_step){
+    for(double alpha = 0.0; alpha <= 1.00001; alpha += alpha_step){
         std::string name = "alpha_" + std::to_string(alpha);
         attack_params["alpha"] = std::to_string(alpha);
         Experiment exp(name, seed, num_runs, 
@@ -128,15 +128,15 @@ void Manager::run_offset_experiment(size_t seed, std::string results_path, std::
                                          + "_" + std::to_string(num_queries_per_week) + ".txt";
     std::ofstream out(file);
 
-    std::cout << "Running Offset Experiment " << num_keywords << std::endl;
+    std::cout << "Running Offset Experiment " << num_keywords << " " << num_queries_per_week << std::endl;
 
     // experiment parameters
     
-    Dataset* dataset = loadDataset(dataset_name);
+    Dataset* dataset = loadDataset(dataset_name, seed);
 
     std::string attack = "SAPAttack";
     std::map<std::string, std::string> attack_params;
-    attack_params["alpha"] = "0.5";
+    attack_params["alpha"] = "1.0";
     attack_params["defense"] = "default";
     std::string defense = "default";
     std::map<std::string, std::string> defense_params;
@@ -145,7 +145,7 @@ void Manager::run_offset_experiment(size_t seed, std::string results_path, std::
     out << "Offset experiment" << std::endl;
     out << num_keywords << " " << num_queries_per_week << " " << num_runs << std::endl;
 
-
+    
     for(int offset : offsets){
         std::string name = "offset_" + std::to_string(offset);
         Experiment exp(name, seed, num_runs, 
@@ -184,7 +184,7 @@ void Manager::run_quantity_experiment(size_t seed, std::string results_path, std
     std::string defense = "default";
     std::map<std::string, std::string> defense_params;
 
-    Dataset* dataset = loadDataset(dataset_name);
+    Dataset* dataset = loadDataset(dataset_name, seed);
     size_t observation_offset = 5;
 
 
@@ -222,10 +222,10 @@ void Manager::run_defense_experiment(size_t seed, std::string results_path, std:
     // file to write results
     std::string folder = results_path + "\\defense_" + dataset_name;
     std::filesystem::create_directory(folder);
-    std::string file = folder + "\\" + "defense_" + std::to_string(num_keywords) + ".txt";
+    std::string file = folder + "\\" + "defense_" + std::to_string(num_keywords) + "_" + known_defense + ".txt";
     std::ofstream out(file);
 
-    std::cout << "Running Defense Experiment " << num_keywords << std::endl;
+    std::cout << "Running Defense Experiment " << num_keywords << " " << known_defense << std::endl;
     
     // experiment parameters
     std::string attack = "SAPAttack";
@@ -236,13 +236,26 @@ void Manager::run_defense_experiment(size_t seed, std::string results_path, std:
     std::map<std::string, std::string> defense_params;
     defense_params["TPR"] = "0.999";
 
-    Dataset* dataset = loadDataset(dataset_name);
+    Dataset* dataset = loadDataset(dataset_name, seed);
     size_t observation_offset = 5;
     size_t num_queries_per_week = 5;
 
+
+    out << "Defense experiment" << std::endl;
+    out << num_keywords << " " << num_runs << std::endl;
     for (double FPR : FPRs)
     {
-        defense_params["FPR"] = std::to_string(FPR);
+        if (FPR == 0.0)
+        {
+            defense = "default"; // no defense
+            attack_params["defense"] = "default";
+        }
+        else
+        {
+            attack_params["defense"] = known_defense;
+            defense_params["FPR"] = std::to_string(FPR);
+            defense = "CLRZ"; // yes defense
+        }
         std::string name = "defense_" + std::to_string(FPR);
         Experiment exp(name, seed, num_runs, 
                     dataset, num_keywords, observation_offset, 

@@ -71,23 +71,24 @@ std::vector<std::vector<keyword_id>> SAPAttack::run_attack(std::vector<std::vect
     }
 
 
-    if(this->defense == "CLRZ"){
-        // adjusting tag volumes
-        double TPR = std::stod(this->defense_params["TPR"]);
-        double FPR = std::stod(this->defense_params["FPR"]);
-        for (tag tag = 0; tag < tags.size(); tag++){
-            tag_volume[tag] = tag_volume[tag] * TPR + (1 - tag_volume[tag]) * FPR;
-        }
-    }
+    
 
     //log_to_stdout(print_vector(tag_volume, "Tag volumes"));
     // calculate keyword volumes
     std::vector<double> keyword_volume(selected_keywords.size());
     for (size_t i = 0; i < selected_keywords.size(); i++){
-        keyword_volume[i] = dataset->keyword_docs[selected_keywords[i]].size() / (double)num_docs;
+        keyword_volume[i] = dataset->test_keyword_docs[selected_keywords[i]].size() / (double)num_docs;
         keyword_volume[i] = clamp(keyword_volume[i], 0.00001, 0.99999);
     }
-
+    if(this->defense == "CLRZ"){
+        // adjusting keyword volumes
+        //std::cout << "Adjusting keyword volumes" << std::endl;
+        double TPR = std::stod(this->defense_params["TPR"]);
+        double FPR = std::stod(this->defense_params["FPR"]);
+        for (size_t i = 0; i < selected_keywords.size(); i++){
+            keyword_volume[i] = keyword_volume[i] * (TPR - FPR) + FPR;
+        }
+    }
     //log_to_stdout(print_vector(keyword_volume, "Keyword volumes"));
     // calculate frequency matrix
     double freq_weight = 1.0;
